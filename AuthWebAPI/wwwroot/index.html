@@ -1,0 +1,225 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>JWT в ASP.NET Core Web API</title>
+</head>
+<body>
+    <div id="userInfo" style="display:none;">
+        <p>You've logged in as': <span id="userName"></span></p>
+        <input type="button" value="Log Out" id="logOut" />
+    </div>
+
+    <div id="register" style="display:none;">
+        <form name="personForm">
+            <input type="hidden" name="id" value="0" />
+            <div class="form-group col-md-5">
+                <label for="login">Login:</label>
+                <input class="form-control" name="login" />
+            </div>
+            <div class="form-group col-md-5">
+                <label for="password">Password:</label>
+                <input type="password" class="form-control" name="password" />
+            </div>
+            <div class="panel-body">
+                <button type="submit" id="submitRegister" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="loginForm">
+        <h3>Site log in form</h3>
+        <label>Email</label><br />
+        <input type="email" id="emailLogin" /> <br /><br />
+        <label>Password</label><br />
+        <input type="password" id="passwordLogin" /><br /><br />
+        <input type="submit" id="submitLogin" value="Log in" />
+        <input type="submit" id="gotoRegister" value="Register" />
+    </div>
+
+
+    <div>
+        <input type="submit" id="getDataByLogin" value="Login data" style="display:none;" />
+    </div>
+    <div>
+        <input type="submit" id="getDataByRole" value="Role data" style="display:none;" />
+    </div>
+    <div>
+        <input type="submit" id="getDataByXanart" value="Xanart" style="display:none;" />
+    </div>
+    <div>
+        <input type="submit" id="getAllUsers" value="All Profiles" style="display:none;" />
+    </div>
+    <div>
+        <input id="gSUfield" placeholder="User Id" style="display:none;" />
+    </div>
+    <div>
+        <input type="submit" id="getSpecificUser" value="Specific User" style="display:none;" />
+    </div>
+
+
+
+
+    <script>
+        var tokenKey = "accessToken";
+
+        async function getTokenAsync() {
+            const formData = new FormData();
+            formData.append("grant_type", "password");
+            formData.append("username", document.getElementById("emailLogin").value);
+            formData.append("password", document.getElementById("passwordLogin").value);
+
+            const response = await fetch("/token", {
+                method: "POST",
+                headers: { "Accept": "application/json" },
+                body: formData
+            });
+
+            const data = await response.json();
+
+
+            if (response.ok === true) {
+
+
+                document.getElementById("userName").innerText = data.username;
+                document.getElementById("userInfo").style.display = "block";
+                document.getElementById("loginForm").style.display = "none";
+                document.getElementById("getDataByLogin").style.display = "block";
+                document.getElementById("getDataByRole").style.display = "block";
+                document.getElementById("getDataByXanart").style.display = "block";
+                document.getElementById("getAllUsers").style.display = "block";
+                document.getElementById("gSUfield").style.display = "block";
+                document.getElementById("getSpecificUser").style.display = "block";
+                sessionStorage.setItem(tokenKey, data.access_token);
+                console.log(data.access_token);
+            }
+            else {
+
+                console.log("Error: ", response.status, data.errorText);
+            }
+        };
+
+
+
+        async function getData(url) {
+            const token = sessionStorage.getItem(tokenKey);
+
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer " + token
+                }
+            });
+            if (response.ok === true) {
+
+                const data = await response.json();
+                alert(data)
+            }
+            else
+                console.log("Status: ", response.status);
+        };
+
+        async function GetPersons() {
+            const response = await fetch("/api/create", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                await response.json();
+            }
+        }
+
+        async function CreatePerson(personEmail, personPassword) {
+            const formData = new FormData();
+            formData.append("grant_type", "password");
+
+            const response = await fetch("api/create", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    login: personEmail,
+                    password: personPassword
+                })
+            });
+            if (response.ok === true) {
+                await response.json();
+                document.getElementById("register").style.display = "none";
+                document.getElementById("loginForm").style.display = "block";
+                document.getElementById("userInfo").style.display = "none";
+
+            }
+        }
+
+        document.getElementById("submitLogin").addEventListener("click", e => {
+
+            e.preventDefault();
+            getTokenAsync();
+        });
+
+        document.getElementById("gotoRegister").addEventListener("click", e => {
+            document.getElementById("register").style.display = "block";
+            document.getElementById("loginForm").style.display = "none";
+            document.getElementById("userInfo").style.display = "none";
+        });
+
+
+        document.getElementById("logOut").addEventListener("click", e => {
+
+            e.preventDefault();
+            document.getElementById("userName").innerText = "";
+            document.getElementById("userInfo").style.display = "none";
+            document.getElementById("loginForm").style.display = "block";
+            document.getElementById("getDataByLogin").style.display = "none";
+            document.getElementById("getDataByRole").style.display = "none";
+            document.getElementById("getDataByXanart").style.display = "none";
+            sessionStorage.removeItem(tokenKey);
+        });
+
+
+        document.getElementById("getDataByLogin").addEventListener("click", e => {
+
+            e.preventDefault();
+            getData("/api/values/getlogin");
+        });
+
+        document.getElementById("getDataByRole").addEventListener("click", e => {
+
+            e.preventDefault();
+            getData("/api/values/getrole");
+        });
+
+        document.getElementById("getDataByXanart").addEventListener("click", e => {
+
+            e.preventDefault();
+            getData("/api/values/getabout");
+        });
+
+        document.getElementById("getAllUsers").addEventListener("click", e => {
+
+            e.preventDefault();
+            getData("/api/values/getallinfo");
+
+        });
+
+        document.getElementById("getSpecificUser").addEventListener("click", e => {
+
+            var id = document.getElementById("gSUfield").value;
+            e.preventDefault();
+            getData("/api/values/getspecificinfo/" + id);
+
+        });
+
+
+        document.forms["personForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            const form = document.forms["personForm"];
+            const id = form.elements["id"].value;
+            const login = form.elements["login"].value;
+            const password = form.elements["password"].value;
+            if (id == 0)
+                CreatePerson(login, password);
+        });
+    </script>
+</body>
+</html>
